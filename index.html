@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Leukaemia Detection AI</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        margin: 0;
+        padding: 0;
+        text-align: center;
+        color: #333;
+      }
+
+      .container {
+        width: 400px;
+        margin: 80px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      h1 {
+        margin-bottom: 10px;
+      }
+
+      .upload-box {
+        border: 2px dashed #007bff;
+        padding: 30px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+
+      .upload-box:hover {
+        background: #f0f8ff;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      button {
+        margin-top: 15px;
+        padding: 10px 25px;
+        border: none;
+        background: #007bff;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      button:hover {
+        background: #0056b3;
+      }
+
+      #preview {
+        margin-top: 15px;
+        max-width: 100%;
+        border-radius: 10px;
+      }
+
+      #result {
+        margin-top: 20px;
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .loader {
+        display: none;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #007bff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin: 15px auto;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>🧬 Leukaemia Detection</h1>
+      <p>Upload blood smear image</p>
+
+      <label class="upload-box" id="drop-area">
+        Drag & Drop or Click
+        <input type="file" id="fileInput" accept="image/*" />
+      </label>
+
+      <button onclick="uploadImage()">Predict</button>
+
+      <div class="loader" id="loader"></div>
+
+      <img id="preview" src="" />
+      <div id="result"></div>
+    </div>
+
+    <script>
+      const fileInput = document.getElementById("fileInput");
+      const dropArea = document.getElementById("drop-area");
+
+      dropArea.addEventListener("click", () => fileInput.click());
+
+      dropArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropArea.style.background = "#e6f7ff";
+      });
+
+      dropArea.addEventListener("dragleave", () => {
+        dropArea.style.background = "white";
+      });
+
+      dropArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        fileInput.files = e.dataTransfer.files;
+        showPreview();
+      });
+
+      fileInput.addEventListener("change", showPreview);
+
+      function showPreview() {
+        const file = fileInput.files[0];
+        if (!file) return;
+        document.getElementById("preview").src = URL.createObjectURL(file);
+      }
+
+      function uploadImage() {
+        const file = fileInput.files[0];
+        if (!file) {
+          alert("Please upload image");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        document.getElementById("loader").style.display = "block";
+        document.getElementById("result").innerText = "";
+
+        fetch("http://127.0.0.1:5000/predict", {
+          method: "POST",
+          body: formData,
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            document.getElementById("loader").style.display = "none";
+
+            if (data.error) {
+              document.getElementById("result").innerText =
+                "Error: " + data.error;
+            } else {
+              document.getElementById("result").innerHTML =
+                `Prediction: <span style="color:green">${data.prediction}</span><br>
+                 Confidence: ${(data.confidence * 100).toFixed(2)}%`;
+            }
+          })
+          .catch(() => {
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("result").innerText = "Server error";
+          });
+      }
+    </script>
+  </body>
+</html>
